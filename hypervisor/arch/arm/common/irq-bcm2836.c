@@ -353,8 +353,12 @@ static int bcm2836_irq_enter_to_guest(void *item, void *data)
 	struct vcpu *vcpu = (struct vcpu *)item;
 	struct virq_struct *virq_struct = vcpu->virq_struct;
 
-	if (is_list_empty(&virq_struct->pending_list) &&
-			is_list_empty(&virq_struct->active_list)) {
+	/*
+	 * if there is no pending virq for this vcpu
+	 * clear the virq state in HCR_EL2 then just return
+	 * else inject the virq
+	 */
+	if (is_list_empty(&virq_struct->pending_list)) {
 		arch_clear_virq_flag();
 		return 0;
 	}
@@ -370,11 +374,19 @@ static int bcm2836_irq_enter_to_guest(void *item, void *data)
 
 	spin_lock_irqsave(&virq_struct->lock, flags);
 
+	/*
+	 * just inject one virq the time since when the
+	 * virq is handled, the vm will trap to hypervisor
+	 * again, actually here can inject all virq to the
+	 * guest, but it is hard to judge whether all virq
+	 * has been handled by guest vm TBD
+	 */
 	list_for_each_entry_safe(virq, n, &virq_struct->pending_list, list) {
 		if (!virq_is_pending(virq)) {
 			pr_error("virq is not request %d\n", virq->vno);
 			list_del(&virq->list);
 			virq->list.next = NULL;
+			continue;
 		}
 
 		/*
@@ -386,6 +398,7 @@ static int bcm2836_irq_enter_to_guest(void *item, void *data)
 		virq_clear_pending(virq);
 		list_del(&virq->list);
 		list_add_tail(&virq_struct->active_list, &virq->list);
+		break;
 	}
 
 	spin_unlock_irqrestore(&virq_struct->lock, flags);

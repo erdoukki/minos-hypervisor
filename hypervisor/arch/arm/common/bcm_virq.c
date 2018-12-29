@@ -91,8 +91,6 @@ static int bcm2835_virq_write(struct vdev *vdev, gp_regs *reg,
 	uint32_t irq;
 	struct vcpu *vcpu = current_vcpu;
 
-	offset -= BCM2835_INC_OFFSET;
-
 	switch (offset) {
 	case BCM2835_IRQ_ENABLE1:
 		bcm2835_virq_enable(vcpu, 64, value);
@@ -103,7 +101,6 @@ static int bcm2835_virq_write(struct vdev *vdev, gp_regs *reg,
 	case BCM2835_IRQ_BASIC_ENABLE:
 		bcm2835_virq_enable(vcpu, 32, value);
 		break;
-
 	case BCM2835_IRQ_DISABLE1:
 		bcm2835_virq_disable(vcpu, 64, value);
 		break;
@@ -124,7 +121,7 @@ static int bcm2835_virq_write(struct vdev *vdev, gp_regs *reg,
 		clear_pending_virq(vcpu, irq + 16);
 		break;
 	default:
-		pr_warn("unsupport action for bcm2836 virq\n");
+		pr_warn("unsupport bcm2835 action now 0x%x\n", offset);
 		break;
 	}
 

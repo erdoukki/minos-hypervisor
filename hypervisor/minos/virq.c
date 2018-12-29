@@ -387,7 +387,7 @@ uint32_t get_pending_virq(struct vcpu *vcpu)
 	desc = list_first_entry(&virq_struct->pending_list,
 			struct virq_desc, list);
 	list_del(&desc->list);
-	desc->list.next = NULL;
+	list_add_tail(&virq_struct->active_list, &desc->list);
 	desc->state = VIRQ_STATE_ACTIVE;
 	virq_clear_pending(desc);
 
